@@ -64,11 +64,11 @@ class ST:
 		st_pw = gp.getpass('Space-Track password: ')
 		return st_un, st_pw
 	
-	def getLatestTLE(self, norad_id, le_format='3le'):
+	def getLatestTLE(self, norad, le_format='3le'):
 		"""
-		Obtain latest TLE for a given NORAD object
+		Obtain latest TLE for a NORAD object
 		"""
-		return self.client.tle_latest(norad_cat_id=norad_id,
+		return self.client.tle_latest(norad_cat_id=norad,
 		                              iter_lines=True,
 		                              ordinal=1,
 		                              format=le_format)
@@ -82,15 +82,21 @@ class ST:
                                       ordinal=1, 
                                       format=le_format)
     
-    def getPastCatalog(self, start, end, out_dir=None, le_format='3le'):
+    def getPastTLE(self, norad, start, end, epoch=None, le_format='3le'):
 		"""
-		Obtain catalog of TLEs for a given epoch range
+		Obtain list of TLEs for a NORAD object within an epoch range,
+		narrowed down to one (most recent) if desired epoch given
 		"""
 		
-		return self.client.tle_latest(iter_lines=True, 
-                                      epoch='>now-30', 
-                                      ordinal=1, 
-                                      format=le_format)
+		
+		return
+    
+    def getPastCatalog(self, start, end, out_dir=None, le_format='3le'):
+		"""
+		Obtain catalog of TLEs for an epoch range
+		"""
+		
+		return 
 
 class TLE:
 	"""
@@ -111,7 +117,12 @@ class TLE:
 		"""
 		ra, dec, _ = (self.obj - self.obs).at(self.ts.utc(time)).radec()
         return ra._degrees * u.degree, dec.degrees * u.degree
-		
+
+class Catalog:
+	"""
+	TLE catalog
+	"""
+	def __init__(self, tles):	
 		
 
 if __name__ == "__main__":
