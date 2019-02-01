@@ -11,7 +11,7 @@ from skyfield.api import load, Topos, utc
 from skyfield.sgp4lib import EarthSatellite
 
 SITE_LATITUDE = '28.7603135N'
-SITE_LONGITUDE = '17.8796168 W'
+SITE_LONGITUDE = '17.8796168W'
 SITE_ELEVATION = 2387
 TOPOS_LOCATION = Topos(SITE_LATITUDE, 
                        SITE_LONGITUDE, 
@@ -95,8 +95,29 @@ class ST:
 		"""
 		Obtain catalog of TLEs for an epoch range
 		"""
+		tles = []
+		# NORAD ids go up to around 90000 for full catalogue
+		for idx in range(100000):
+			result = self.client.tle(norad_cat_id=i,
+			                         iter_lines=True,
+			                         epoch='{}--{}'.format(start, end),
+			                         format=le_format)
+			obj_tles = [line for line in result]
+			if len(tle) > 0:
+				# check if GEO
+				testcase = TLE(obj_tles[1], obj_tles[2], obj_tles[0])
+				if abs(testcase.mean_motion-1) < 0.01 and \
+				                      testcase.eccentricity < 0.01:
+					tles += obj_tles
+				else:
+					continue
 		
-		return 
+		if out_dir is not None:
+			with open(out_dir + 'run_catalogue.txt', 'w') as cat:
+				for line in tles:
+					cat.write('{}\n'.format(line))
+		
+		return tles
 
 class TLE:
 	"""
@@ -107,9 +128,13 @@ class TLE:
 		self.line2 = line2
 		if name is not None:
 			self.name = name
+		
 		self.obs = TOPOS_LOCATION
         self.obj = EarthSatellite(tle_array[1], tle_array[2])
         self.ts = load.timescale()
+        
+        self.eccentricity = self.line2[26:33]
+        self.mean_motion = self.line2[52:63]
 	
 	def radec(self, epoch):
 		"""
@@ -124,6 +149,14 @@ class Catalog:
 	"""
 	def __init__(self, tles):	
 		
+
+def getYearDay():
+	"""
+	Convert a datetime object to day of the year
+	"""
+	
+	
+	return yearday
 
 if __name__ == "__main__":
 	
