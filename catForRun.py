@@ -205,13 +205,21 @@ class TLE:
     #def __init__(self, tles):   
         #    
 
-def getYearDay():
+def getYearDay(epoch):
     """
     Convert a datetime object to day of the year
+    
+    Parameters
+    ----------
+    epoch : datetime object
+        Epoch to convert to year day
+    
+    Returns
+    -------
+    yday : float
+        Corresponding year day
     """
-    
-    
-    return yearday
+    return epoch.timetuple().tm_yday
 
 if __name__ == "__main__":
     
