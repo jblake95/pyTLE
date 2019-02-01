@@ -139,7 +139,7 @@ class ST:
         
         return
     
-    def getPastCatGEO(self, start, end, out_dir=None, le_format='3le'):
+    def getRunCatGEO(self, start, end, out_dir=None, le_format='3le'):
         """
         Obtain catalog of GEO TLEs for a given epoch range
         
@@ -182,13 +182,20 @@ class TLE:
         self.line1 = line1
         self.line2 = line2
         if name is not None:
-            self.name = name
+            self.name = name[2:]
         
         self.obs = TOPOS_LOCATION
         self.obj = EarthSatellite(line1, line2, name)
         self.ts = TS
         
+        self.norad_id = int(self.line1[2:7])
+        self.yearday = float(self.line1[20:32])
+        
+        self.inclination = float(self.line2[8:16])
         self.eccentricity = float(self.line2[26:33])
+        self.raan = float(self.line2[17:25])
+        self.argperigree = float(self.line2[34:42])
+        self.mean_anomaly = float(self.line2[43:51])
         self.mean_motion = float(self.line2[52:63])
     
     def radec(self, epoch):
@@ -196,14 +203,7 @@ class TLE:
         Determine radec coords for a given epoch
         """
         ra, dec, _ = (self.obj - self.obs).at(self.ts.utc(time)).radec()
-        return ra._degrees * u.degree, dec.degrees * u.degree
-
-#class Catalog:
-    #"""
-    #TLE catalog
-    #"""
-    #def __init__(self, tles):   
-        #    
+        return ra._degrees * u.degree, dec.degrees * u.degree  
 
 def getYearDay(epoch):
     """
@@ -221,13 +221,26 @@ def getYearDay(epoch):
     """
     return epoch.timetuple().tm_yday
 
+def getEpochCat(run_cat, epoch):
+    """
+    Refine a run catalogue, keeping only latest element sets with 
+    respect to the desired epoch
+    """
+    i = 0
+    epoch_cat = []
+    tracker = {}
+    while i < len(run_cat):
+        tle = TLE(run_cat[i+1], run_cat[i+2], name=run_cat[i])
+    
+    return epoch_cat
+
 if __name__ == "__main__":
     
     args = argParse()
     
     st = ST() # connect to SpaceTrack
     
-    cat = st.getPastCatGEO(args.start,
+    cat = st.getRunCatGEO(args.start,
                             args.end,
                             args.out_dir)
     print(len(cat))
