@@ -117,7 +117,7 @@ class ST:
         
         return
     
-    def getRunCatGEO(self, start, end, out_dir=None):
+    def getRunCatGEO(self, dates, out_dir=None):
         """
         Obtain catalog of GEO TLEs for a given epoch range
         
@@ -135,13 +135,18 @@ class ST:
             Element sets returned from query to SpaceTrack
         """
         orb = Orbit('geo') 
-        result = self.client.tle(iter_lines=True,
-                                 eccentricity=orb.eccentricity_lim,
-                                 mean_motion=orb.mean_motion_lim,
-                                 epoch='{}--{}'.format(start, end),
-                                 limit=400000,
-                                 format=LE_FORMAT)
-        tles = [line for line in result]
+        
+        tles = []
+        for date in dates:
+            date_range = '{}--{}'.format(date[0].strftime('%Y-%m-%d'),
+                                         date[1].strftime('%Y-%m-%d'))
+            result = self.client.tle(iter_lines=True,
+                                     eccentricity=orb.eccentricity_lim,
+                                     mean_motion=orb.mean_motion_lim,
+                                     epoch=date_range,
+                                     limit=200000,
+                                     format=LE_FORMAT)
+            tles += [line for line in result]
         
         print('Number of tles returned: {}'.format(str(len(tles))))
         
