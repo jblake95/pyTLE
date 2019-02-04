@@ -2,6 +2,7 @@
 Obtain overall 3LE catalog for a given date range
 """
 
+import json
 import argparse as ap
 import getpass as gp
 from spacetrack import SpaceTrackClient
@@ -221,7 +222,7 @@ def getYearDay(epoch):
     """
     return epoch.timetuple().tm_yday
 
-def getEpochCat(run_cat, epoch):
+def getEpochCat(run_cat, epoch, out_dir):
     """
     Refine a run catalogue, keeping only latest element sets with 
     respect to the desired epoch
@@ -230,7 +231,20 @@ def getEpochCat(run_cat, epoch):
     epoch_cat = []
     tracker = {}
     while i < len(run_cat):
+        print(i)
         tle = TLE(run_cat[i+1], run_cat[i+2], name=run_cat[i])
+        if tle.norad_id in tracker.keys():
+            tracker[tle.norad_id].append([tle.line1,
+                                          tle.line2])
+        else:
+            tracker.update({tle.norad_id:[[tle.line1,
+                                           tle.line2]]})
+        i += 3
+    
+    print(tracker)
+    
+    with open(out_dir + 'test.json', 'w') as f:
+        json.dump(tracker, f)
     
     return epoch_cat
 
@@ -240,9 +254,10 @@ if __name__ == "__main__":
     
     st = ST() # connect to SpaceTrack
     
-    cat = st.getRunCatGEO(args.start,
-                            args.end,
-                            args.out_dir)
-    print(len(cat))
+    run_cat = st.getRunCatGEO(args.start,
+                              args.end)
+                              args.out_dir)
     
+    print(len(run_cat))
     
+    epoch_cat = getEpochCat(run_cat, 'blah', args.out_dir) 
