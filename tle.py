@@ -212,34 +212,44 @@ def checkRunLength(start, end, cat_type):
     
     Parameters
     ----------
+    start, end : datetime object
+        Start and end epochs for the run (after leniency corrections)
+    cat_type : str
+        Type of objects to be queried (e.g. 'geo')
     
     Returns
     -------
     dates : array-like
+        List of (start, end) tuples corresponding to appropriate 
+        limits for querying the Space-Track API
     """
     if cat_type.lower() in GEO_CHECK + MEO_CHECK + HEO_CHECK:
-		max_time = 20 
-	elif cat_type.lower() in LEO_CHECK + ALL_CHECK:
-		max_time = 2 
-	else:
-		print('Incorrect format: please supply a valid orbit type... \n'
-		      'GEO - "g" \n'
-			  'LEO - "l" \n'
-			  'MEO - "m" \n'
-			  'HEO - "h" \n'
-			  'ALL - "a" \n')
-		quit()
+        max_time = 20 
+    elif cat_type.lower() in LEO_CHECK + ALL_CHECK:
+        max_time = 2 
+    else:
+        print('Incorrect format: please supply a valid orbit type... \n'
+              'GEO - "g" \n'
+              'LEO - "l" \n'
+              'MEO - "m" \n'
+              'HEO - "h" \n'
+              'ALL - "a" \n')
+        quit()
     
     run_length = end - start 
     
     dates = []
-    i = 0
     if run_length.days > max_time:
-		while i < run_length.days:
-			dates.append((start + timedelta(days=i),
-			              start + timedelta(days=i + max_time)))
-			i += max_time
-    print(dates)
+        
+        rem = run_length.days % max_time
+        n_chunks = run_length.days // max_time
+        for i in range(n_chunks):
+            dates.append((start + timedelta(days=i*max_time),
+                          start + timedelta(days=(i+1)*max_time)))
+        
+        dates.append((start + timedelta(days=n_chunks*max_time),
+                      start + timedelta(days=n_chunks*max_time + rem)))
+    
     return dates
 
 def organiseCat(cat, out_dir):

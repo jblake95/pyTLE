@@ -58,7 +58,7 @@ if __name__ == "__main__":
     
     # adjust dates for leniency
     start -= timedelta(days=30) # match usual allowance for Space-Track
-    end += timedelta(days=2)    # future tle better than very old tle
+    end += timedelta(days=5)    # future tle better than very old tle
     
     # check length of run does not exceed limit for catalogue type
     dates = checkRunLength(start, end, args.cat_type)
