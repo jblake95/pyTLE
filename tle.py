@@ -2,10 +2,19 @@
 Module for dealing with Space-Track elsets
 """
 
+import json
 import getpass as gp
 from spacetrack import SpaceTrackClient
 import spacetrack.operators as op
-from skyfield.api import load, Topos, utc
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from skyfield.api import (
+    load, 
+    Topos, 
+    utc,
+    )
 from skyfield.sgp4lib import EarthSatellite
 
 TS = load.timescale() # save repeated use in iterative loops
@@ -56,12 +65,12 @@ class Orbit:
         elif orb_type.lower() in ALL_CHECK:
             print('Full catalogue specified; no limits placed.')
         else:
-            print('Please provide a valid orbit type\n'
-                  'GEO - "g"\n'
-                  'LEO - "l"\n'
-                  'MEO - "m"\n'
-                  'HEO - "h"\n'
-                  'ALL - "a"\n')
+            print('Please provide a valid orbit type... \n'
+                  'GEO - "g" \n'
+                  'LEO - "l" \n'
+                  'MEO - "m" \n'
+                  'HEO - "h" \n'
+                  'ALL - "a" \n')
             quit()
 
 class ST:
@@ -130,6 +139,7 @@ class ST:
                                  eccentricity=orb.eccentricity_lim,
                                  mean_motion=orb.mean_motion_lim,
                                  epoch='{}--{}'.format(start, end),
+                                 limit=400000,
                                  format=LE_FORMAT)
         tles = [line for line in result]
         
@@ -171,4 +181,100 @@ class TLE:
         Determine radec coords for a given epoch
         """
         ra, dec, _ = (self.obj - self.obs).at(self.ts.utc(time)).radec()
-        return ra._degrees * u.degree, dec.degrees * u.degree  
+        return ra._degrees * u.degree, dec.degrees * u.degree
+
+def parseInput(args):
+    """
+    Read the input arguments in a more useful format
+    
+    Parameters
+    ----------
+    args : argparse object
+        Arguments returned by argparse user interaction
+    
+    Returns
+    -------
+    start_date, end_date : datetime objects
+        Start and end dates of run in datetime format
+    """
+    try:
+        start_date = datetime.strptime(args.start, '%Y-%m-%d')
+        end_date = datetime.strptime(args.end, '%Y-%m-%d')
+    except:
+        print('Incorrect format: please supply dates "YYYY-mm-dd"...')
+        quit()
+    
+    return start_date, end_date
+
+def checkRunLength(start, end, cat_type):
+    """
+    Check length of run to ensure query does not exceed limit
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    dates : array-like
+    """
+    if cat_type.lower() in GEO_CHECK + MEO_CHECK + HEO_CHECK:
+		max_time = 20 
+	elif cat_type.lower() in LEO_CHECK + ALL_CHECK:
+		max_time = 2 
+	else:
+		print('Incorrect format: please supply a valid orbit type... \n'
+		      'GEO - "g" \n'
+			  'LEO - "l" \n'
+			  'MEO - "m" \n'
+			  'HEO - "h" \n'
+			  'ALL - "a" \n')
+		quit()
+    
+    run_length = end - start 
+    
+    dates = []
+    i = 0
+    if run_length.days > max_time:
+		while i < run_length.days:
+			dates.append((start + timedelta(days=i),
+			              start + timedelta(days=i + max_time)))
+			i += max_time
+    print(dates)
+    return dates
+
+def organiseCat(cat, out_dir):
+    """
+    Organise run catalogue, grouping tles by norad id in a 
+    user-friendly format
+    
+    Parameters
+    ----------
+    cat : array-like
+        List of 3les pulled from the Space-Track database between the
+        desired start and end dates
+    out_dir : str
+        Directory in which to store output json file containing
+        organised version of the run catalogue
+    
+    Returns
+    -------
+    org_cat : dict
+        Run catalogue organised by norad id
+    """
+    i = 0
+    org_cat = {}
+    while i < len(cat):
+        print('Processing {}/{}'.format(str(i),str(len(cat))), end="\r")
+        tle = TLE(cat[i+1], cat[i+2], name=cat[i])
+        if tle.norad_id in org_cat.keys():
+            org_cat[tle.norad_id].append([tle.line1,
+                                          tle.line2])
+        else:
+            org_cat.update({tle.norad_id:[[tle.line1,
+                                           tle.line2]]})
+        i += 3
+    
+    with open(out_dir + 'run_cat.json', 'w') as f:
+        json.dump(org_cat, f)
+    
+    return org_cat
