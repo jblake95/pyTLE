@@ -8,7 +8,8 @@ import spacetrack.operators as op
 from skyfield.api import load, Topos, utc
 from skyfield.sgp4lib import EarthSatellite
 
-TS = load.timescale()
+TS = load.timescale() # save repeated use in iterative loops
+LE_FORMAT = '3le'     # TODO: generalise to allow for 'tle' format
 
 SITE_LATITUDE = '28.7603135N'
 SITE_LONGITUDE = '17.8796168W'
@@ -81,34 +82,33 @@ class ST:
         st_pw = gp.getpass('Space-Track password: ')
         return st_un, st_pw
     
-    def getLatestTLE(self, norad, le_format='3le'):
+    def getLatestTLE(self, norad_id):
         """
         Obtain latest TLE for a NORAD object
         """
-        return self.client.tle_latest(norad_cat_id=norad,
+        return self.client.tle_latest(norad_cat_id=norad_id,
                                       iter_lines=True,
                                       ordinal=1,
-                                      format=le_format)
+                                      format=LE_FORMAT)
     
-    def getLatestCatalog(self, out_dir=None, le_format='3le'):
+    def getLatestCatalog(self, out_dir=None):
         """
         Obtain catalog of latest TLEs from Space-Track
         """
         return self.client.tle_latest(iter_lines=True, 
                                       epoch='>now-30', 
                                       ordinal=1, 
-                                      format=le_format)
+                                      format=LE_FORMAT)
     
-    def getPastTLE(self, norad, start, end, epoch=None, le_format='3le'):
+    def getPastTLE(self, norad, start, end, epoch=None):
         """
         Obtain list of TLEs for a NORAD object within an epoch range,
         narrowed down to one (most recent) if desired epoch given
         """
         
-        
         return
     
-    def getRunCatGEO(self, start, end, out_dir=None, le_format='3le'):
+    def getRunCatGEO(self, start, end, out_dir=None):
         """
         Obtain catalog of GEO TLEs for a given epoch range
         
@@ -119,9 +119,6 @@ class ST:
         out_dir : str, optional
             Output directory in which to store catalogue
             Default = None
-        le_format : str
-            Format of returned element sets ('tle' or '3le')
-            Default = '3le'
         
         Returns
         -------
@@ -133,13 +130,13 @@ class ST:
                                  eccentricity=orb.eccentricity_lim,
                                  mean_motion=orb.mean_motion_lim,
                                  epoch='{}--{}'.format(start, end),
-                                 format=le_format)
+                                 format=LE_FORMAT)
         tles = [line for line in result]
         
         print('Number of tles returned: {}'.format(str(len(tles))))
         
         if out_dir is not None:
-            with open(out_dir + 'run_catalogue.txt', 'w') as f:
+            with open(out_dir + 'run_cat.txt', 'w') as f:
                 for line in tles:
                     f.write('{}\n'.format(line))
         
