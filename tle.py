@@ -136,6 +136,8 @@ class ST:
                                  format=le_format)
         tles = [line for line in result]
         
+        print('Number of tles returned: {}'.format(str(len(tles))))
+        
         if out_dir is not None:
             with open(out_dir + 'run_catalogue.txt', 'w') as f:
                 for line in tles:

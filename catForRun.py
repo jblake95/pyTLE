@@ -2,9 +2,15 @@
 Obtain overall 3LE catalog for a given date range
 """
 
-from tle import TLE, ST
+from tle import (
+    TLE, 
+    ST,
+    )
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import json
-import datetime
 import argparse as ap
 
 def argParse():
@@ -36,6 +42,29 @@ def argParse():
     
     return parser.parse_args()
 
+def parseInput(args):
+    """
+    Read the input arguments in a more useful format
+    
+    Parameters
+    ----------
+    args : argparse object
+        Arguments returned by argparse user interaction
+    
+    Returns
+    -------
+    start_date, end_date : datetime objects
+        Start and end dates of run in datetime format
+    """
+    try:
+        start_date = datetime.strptime(args.start, '%Y-%m-%d')
+        end_date = datetime.strptime(args.end, '%Y-%m-%d')
+    except:
+        print('Incorrect format: please supply dates "YYYY-mm-dd"...')
+        quit()
+    
+    return start_date, end_date
+
 def getYearDay(epoch):
     """
     Convert a datetime object to day of the year
@@ -52,42 +81,52 @@ def getYearDay(epoch):
     """
     return epoch.timetuple().tm_yday
 
-def getEpochCat(run_cat, epoch, out_dir):
+def organiseCat(cat, out_dir):
     """
-    Refine a run catalogue, keeping only latest element sets with 
-    respect to the desired epoch
+    Organise run catalogue, grouping tles by norad id in a 
+    user-friendly format
+    
+    Parameters
+    ----------
+    cat : array-like
+        List of 3les pulled from the Space-Track database between the
+        desired start and end dates
+    out_dir : str
+        Directory in which to store output json file containing
+        organised version of the run catalogue
+    
+    Returns
+    -------
+    org_cat : dict
+        Run catalogue organised by norad id
     """
     i = 0
-    epoch_cat = []
-    tracker = {}
-    while i < len(run_cat):
-        print(i)
-        tle = TLE(run_cat[i+1], run_cat[i+2], name=run_cat[i])
-        if tle.norad_id in tracker.keys():
-            tracker[tle.norad_id].append([tle.line1,
+    org_cat = {}
+    while i < len(cat):
+        print('Processing {}/{}'.format(str(i),str(len(cat))), end="\r")
+        tle = TLE(cat[i+1], cat[i+2], name=cat[i])
+        if tle.norad_id in org_cat.keys():
+            org_cat[tle.norad_id].append([tle.line1,
                                           tle.line2])
         else:
-            tracker.update({tle.norad_id:[[tle.line1,
+            org_cat.update({tle.norad_id:[[tle.line1,
                                            tle.line2]]})
         i += 3
     
-    print(tracker)
+    with open(out_dir + 'run_cat.json', 'w') as f:
+        json.dump(org_cat, f)
     
-    with open(out_dir + 'test.json', 'w') as f:
-        json.dump(tracker, f)
-    
-    return epoch_cat
+    return org_cat
 
 if __name__ == "__main__":
     
     args = argParse()
     
-    st = ST() # connect to SpaceTrack
-    
+    # connect to SpaceTrack and obtain catalogue for INT run
+    st = ST()
     run_cat = st.getRunCatGEO(args.start,
-                              args.end)
-                              #args.out_dir)
+                              args.end,
+                              args.out_dir)
     
-    print(len(run_cat))
-    
-    epoch_cat = getEpochCat(run_cat, 'blah', args.out_dir) 
+    # organise resulting catalogue into user-friendly format
+    epoch_cat = organiseCat(run_cat, args.out_dir) 
