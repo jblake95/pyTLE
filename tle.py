@@ -52,20 +52,21 @@ class Orbit:
             'a' - ALL
         """
         if orb_type.lower() in GEO_CHECK:
-            self.eccentricity_lim = '<0.01'
-            self.mean_motion_lim = '0.99--1.01'
+            self.e_lim = '<0.01'
+            self.mm_lim = '0.99--1.01'
         elif orb_type.lower() in LEO_CHECK:
-            self.eccentricity_lim = '<0.25'
-            self.mean_motion_lim = '>11.25'
+            self.e_lim = '<0.25'
+            self.mm_lim = '>11.25'
         elif orb_type.lower() in MEO_CHECK:
-            self.eccentricity_lim = '<0.25'
-            self.period_lim = '600--800'
+            self.e_lim = '<0.25'
+            self.p_lim = '600--800'
         elif orb_type.lower() in HEO_CHECK:
-            self.eccentricity_lim = '>0.25'
+            self.e_lim = '>0.25'
         elif orb_type.lower() in ALL_CHECK:
             print('Full catalogue specified; no limits placed.')
         else:
-            print('Please provide a valid orbit type... \n'
+            print('Incorrect format! Please provide a valid' 
+                  'orbit type... \n'
                   'GEO - "g" \n'
                   'LEO - "l" \n'
                   'MEO - "m" \n'
@@ -117,14 +118,17 @@ class ST:
         
         return
     
-    def getRunCatGEO(self, dates, out_dir=None):
+    def getRunCat(self, dates, cat_type, out_dir=None):
         """
         Obtain catalog of GEO TLEs for a given epoch range
         
         Parameters
         ----------
-        start, end : str
-            Start and end epochs for search, format 'yyyy-mm-dd'
+        dates : array-like
+            List of (start, end) tuples corresponding to appropriate 
+            limits for querying the Space-Track API
+        cat_type : str
+            Type of objects to be queried (e.g. 'geo')
         out_dir : str, optional
             Output directory in which to store catalogue
             Default = None
@@ -134,18 +138,46 @@ class ST:
         tles : array-like
             Element sets returned from query to SpaceTrack
         """
-        orb = Orbit('geo') 
+        orb = Orbit(cat_type) 
         
         tles = []
         for date in dates:
             date_range = '{}--{}'.format(date[0].strftime('%Y-%m-%d'),
                                          date[1].strftime('%Y-%m-%d'))
-            result = self.client.tle(iter_lines=True,
-                                     eccentricity=orb.eccentricity_lim,
-                                     mean_motion=orb.mean_motion_lim,
-                                     epoch=date_range,
-                                     limit=200000,
-                                     format=LE_FORMAT)
+            
+            if cat_type in GEO_CHECK + LEO_CHECK: 
+                result = self.client.tle(iter_lines=True,
+                                         eccentricity=orb.e_lim,
+                                         mean_motion=orb.mm_lim,
+                                         epoch=date_range,
+                                         limit=200000,
+                                         format=LE_FORMAT)
+            elif cat_type in MEO_CHECK:
+                result = self.client.tle(iter_lines=True,
+                                         eccentricity=orb.e_lim,
+                                         period=orb.p_lim,
+                                         epoch=date_range,
+                                         limit=200000,
+                                         format=LE_FORMAT)
+            elif cat_type in HEO_CHECK:
+                result = self.client.tle(iter_lines=True,
+                                         eccentricity=orb.e_lim,
+                                         epoch=date_range,
+                                         limit=200000,
+                                         format=LE_FORMAT)
+            elif cat_type in ALL_CHECK:
+                result = self.client.tle(iter_lines=True,
+                                         epoch=date_range,
+                                         limit=200000,
+                                         format=LE_FORMAT)
+            else:
+                print('Incorrect format! Please supply a valid' 
+                      'orbit type... \n'
+                      'GEO - "g" \n'
+                      'LEO - "l" \n'
+                      'MEO - "m" \n'
+                      'HEO - "h" \n'
+                      'ALL - "a" \n')
             tles += [line for line in result]
         
         print('Number of tles returned: {}'.format(str(len(tles))))
@@ -206,7 +238,7 @@ def parseInput(args):
         start_date = datetime.strptime(args.start, '%Y-%m-%d')
         end_date = datetime.strptime(args.end, '%Y-%m-%d')
     except:
-        print('Incorrect format: please supply dates "YYYY-mm-dd"...')
+        print('Incorrect format! Please supply dates "YYYY-mm-dd"...')
         quit()
     
     return start_date, end_date
@@ -233,7 +265,7 @@ def checkRunLength(start, end, cat_type):
     elif cat_type.lower() in LEO_CHECK + ALL_CHECK:
         max_time = 2 
     else:
-        print('Incorrect format: please supply a valid orbit type... \n'
+        print('Incorrect format! Please supply a valid orbit type... \n'
               'GEO - "g" \n'
               'LEO - "l" \n'
               'MEO - "m" \n'

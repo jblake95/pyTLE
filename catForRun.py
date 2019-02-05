@@ -65,8 +65,9 @@ if __name__ == "__main__":
     
     # connect to SpaceTrack and obtain catalogue for INT run
     st = ST()
-    run_cat = st.getRunCatGEO(dates)
-                              #args.out_dir)
+    run_cat = st.getRunCat(dates,
+                           args.cat_type)
+                           #args.out_dir)
     
     # organise resulting catalogue into user-friendly format
     epoch_cat = organiseCat(run_cat, args.out_dir) 
