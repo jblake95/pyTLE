@@ -325,3 +325,36 @@ def organiseCat(cat, out_dir):
         json.dump(org_cat, f)
     
     return org_cat
+
+def getYearDay(epoch):
+    """
+    Convert a datetime object to day of the year
+    
+    Parameters
+    ----------
+    epoch : datetime object
+        Epoch to convert to year day
+    
+    Returns
+    -------
+    yday : float
+        Corresponding year day
+    """
+    return epoch.timetuple().tm_yday
+
+def getEpochCat(run_cat, epoch):
+    """
+    Obtain appropriate catalogue for a desired epoch
+    
+    Parameters
+    ----------
+    run_cat : dict
+    
+    epoch : datetime object
+    
+    Returns
+    -------
+    epoch_cat : dict
+    """
+    
+    return epoch_cat

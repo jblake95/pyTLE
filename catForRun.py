@@ -1,5 +1,5 @@
 """
-Obtain overall 3LE catalog for a given date range
+Obtain overall 3le catalog for a given epoch range
 """
 
 from tle import (
