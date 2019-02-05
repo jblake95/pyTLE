@@ -54,7 +54,7 @@ if __name__ == "__main__":
     
     args = argParse()
     
-    start, end = parseInput(args)
+    start, end = parseRunInput(args)
     
     # adjust dates for leniency
     start -= timedelta(days=30) # match usual allowance for Space-Track
@@ -66,8 +66,8 @@ if __name__ == "__main__":
     # connect to SpaceTrack and obtain catalogue for INT run
     st = ST()
     run_cat = st.getRunCat(dates,
-                           args.cat_type)
-                           #args.out_dir)
+                           args.cat_type,
+                           args.out_dir)
     
     # organise resulting catalogue into user-friendly format
     epoch_cat = organiseCat(run_cat, args.out_dir) 

@@ -4,6 +4,7 @@ Module for dealing with Space-Track elsets
 
 import json
 import getpass as gp
+from operator import itemgetter
 from spacetrack import SpaceTrackClient
 import spacetrack.operators as op
 from datetime import (
@@ -204,7 +205,7 @@ class TLE:
         self.ts = TS
         
         self.norad_id = int(self.line1[2:7])
-        self.yearday = float(self.line1[20:32])
+        self.yday = float(self.line1[20:32])
         
         self.inclination = float(self.line2[8:16])
         self.eccentricity = float(self.line2[26:33])
@@ -220,9 +221,9 @@ class TLE:
         ra, dec, _ = (self.obj - self.obs).at(self.ts.utc(time)).radec()
         return ra._degrees * u.degree, dec.degrees * u.degree
 
-def parseInput(args):
+def parseRunInput(args):
     """
-    Read the input arguments in a more useful format
+    Read the run_cat input arguments in a more useful format
     
     Parameters
     ----------
@@ -242,6 +243,22 @@ def parseInput(args):
         quit()
     
     return start_date, end_date
+
+def parseEpochInput(args):
+    """
+    Read the epoch_cat input arguments in a more useful format
+    
+    Parameters
+    ----------
+    args: argparse object
+        Arguments returned by argparse user interaction
+    
+    Returns
+    -------
+    epoch : datetime object
+        Desired epoch in datetime format
+    """
+    return datetime.strptime(args.epoch, '%Y-%m-%dT%H:%M:%S')
 
 def checkRunLength(start, end, cat_type):
     """
@@ -326,9 +343,10 @@ def organiseCat(cat, out_dir):
     
     return org_cat
 
-def getYearDay(epoch):
+def getFractionalYearDay(epoch):
     """
-    Convert a datetime object to day of the year
+    Convert a datetime object to day of the year with frational 
+    portion of the day
     
     Parameters
     ----------
@@ -340,21 +358,38 @@ def getYearDay(epoch):
     yday : float
         Corresponding year day
     """
-    return epoch.timetuple().tm_yday
+    frac = epoch.hour / 24. + epoch.minute / 60. + epoch.second / 60.
+    
+    return epoch.timetuple().tm_yday + frac
 
-def getEpochCat(run_cat, epoch):
+def getEpochCat(run_cat, epoch, out_dir=None):
     """
     Obtain appropriate catalogue for a desired epoch
     
     Parameters
     ----------
     run_cat : dict
-    
+        Run catalogue, organised by norad id
     epoch : datetime object
+        Desired epoch to compare tles against
+    out_dir : str, optional
+        Output directory in which to store resulting catalogue
+        Default = None
     
     Returns
     -------
     epoch_cat : dict
+        Catalogue of tles for desired epoch
     """
+    epoch_yday = getFractionalYearDay(epoch)
+    
+    epoch_cat = {}
+    for norad_id in run_cat.keys():
+        t_diff = []
+        for tle in run_cat[norad_id]:
+            t = TLE(tle[0], tle[1])
+            t_diff.append(abs(epoch_yday - t.yday))
+        min_idx = min(enumerate(t_diff), key=itemgetter(1))[0]
+        epoch_cat.update({norad_id:tle})
     
     return epoch_cat
