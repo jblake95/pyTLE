@@ -5,6 +5,7 @@ Module for dealing with Space-Track elsets
 import json
 import getpass as gp
 from operator import itemgetter
+from astropy import units as u
 from spacetrack import SpaceTrackClient
 import spacetrack.operators as op
 from datetime import (
@@ -21,8 +22,8 @@ from skyfield.sgp4lib import EarthSatellite
 TS = load.timescale() # save repeated use in iterative loops
 LE_FORMAT = '3le'     # TODO: generalise to allow for 'tle' format
 
-SITE_LATITUDE = '28.7603135N'
-SITE_LONGITUDE = '17.8796168W'
+SITE_LATITUDE = '28.7603135 N'
+SITE_LONGITUDE = '17.8796168 W'
 SITE_ELEVATION = 2387
 TOPOS_LOCATION = Topos(SITE_LATITUDE, 
                        SITE_LONGITUDE, 
@@ -218,8 +219,19 @@ class TLE:
         """
         Determine radec coords for a given epoch
         """
-        ra, dec, _ = (self.obj - self.obs).at(self.ts.utc(time)).radec()
-        return ra._degrees * u.degree, dec.degrees * u.degree
+        epoch = epoch.replace(tzinfo=utc)
+        ra, dec, _ = (self.obj-self.obs).at(self.ts.utc(epoch)).radec()
+        
+        return ra.degrees * u.degree, dec.degrees * u.degree
+
+class Instrument:
+    """
+    Convenience class for instrumental properties
+    """
+    def __init__(self, instrument):
+        if instrument.lower() == 'int':
+            self.fov_ra = 0.5
+            self.fov_dec = 0.5
 
 def parseRunInput(args):
     """
