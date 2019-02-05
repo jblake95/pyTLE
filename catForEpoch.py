@@ -33,6 +33,11 @@ def argParse():
                         help='path to run catalogue json file',
                         type=str)
     
+    parser.add_argument('epoch',
+                        help='desired epoch to compare tles against, '
+                             'format "YYYY-mm=ddTHH:MM:SS"',
+                        type=str)
+    
     parser.add_argument('out_dir',
                         help='output directory for resulting catalogue',
                         type=str)

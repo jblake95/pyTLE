@@ -5,7 +5,7 @@ Obtain overall 3le catalog for a given epoch range
 from tle import (
     TLE, 
     ST,
-    parseInput,
+    parseRunInput,
     checkRunLength,
     organiseCat,
     )

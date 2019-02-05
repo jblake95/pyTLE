@@ -384,12 +384,18 @@ def getEpochCat(run_cat, epoch, out_dir=None):
     epoch_yday = getFractionalYearDay(epoch)
     
     epoch_cat = {}
-    for norad_id in run_cat.keys():
+    for n, norad_id in enumerate(run_cat.keys()):
+        print('Processing {}/{}'.format(str(n),
+                                        str(len(run_cat.keys()))), end="\r")
         t_diff = []
         for tle in run_cat[norad_id]:
             t = TLE(tle[0], tle[1])
             t_diff.append(abs(epoch_yday - t.yday))
         min_idx = min(enumerate(t_diff), key=itemgetter(1))[0]
-        epoch_cat.update({norad_id:tle})
+        epoch_cat.update({norad_id:run_cat[norad_id][min_idx]})
+    
+    if out_dir is not None:
+        with open(out_dir + 'epoch_cat.json', 'w') as f:
+            json.dump(epoch_cat, f)
     
     return epoch_cat
