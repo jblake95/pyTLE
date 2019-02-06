@@ -6,24 +6,29 @@ import json
 import getpass as gp
 from operator import itemgetter
 from astropy import units as u
+from astropy.coordinates import (
+    Longitude, 
+    Latitude, 
+    EarthLocation
+    )
 from spacetrack import SpaceTrackClient
 import spacetrack.operators as op
 from datetime import (
     datetime,
     timedelta,
     )
+from skyfield.sgp4lib import EarthSatellite
 from skyfield.api import (
     load, 
     Topos, 
     utc,
     )
-from skyfield.sgp4lib import EarthSatellite
 
 TS = load.timescale() # save repeated use in iterative loops
 LE_FORMAT = '3le'     # TODO: generalise to allow for 'tle' format
 
-SITE_LATITUDE = '28.7603135 N'
-SITE_LONGITUDE = '17.8796168 W'
+SITE_LATITUDE = 28.7603135
+SITE_LONGITUDE = 17.8796168
 SITE_ELEVATION = 2387
 TOPOS_LOCATION = Topos(SITE_LATITUDE, 
                        SITE_LONGITUDE, 
@@ -219,10 +224,9 @@ class TLE:
         """
         Determine radec coords for a given epoch
         """
-        epoch = epoch.replace(tzinfo=utc)
         ra, dec, _ = (self.obj-self.obs).at(self.ts.utc(epoch)).radec()
         
-        return ra.degrees * u.degree, dec.degrees * u.degree
+        return ra.degrees * u.deg, dec.degrees * u.deg
 
 class Instrument:
     """
@@ -270,7 +274,34 @@ def parseEpochInput(args):
     epoch : datetime object
         Desired epoch in datetime format
     """
-    return datetime.strptime(args.epoch, '%Y-%m-%dT%H:%M:%S')
+    try: 
+        epoch = datetime.strptime(args.epoch, '%Y-%m-%dT%H:%M:%S')
+    except:
+        print('Incorrect format! Please supply epoch as '
+              '"YYYY-mm-ddTHH:MM:SS"...')
+        quit()
+
+def parsePlotGEOInput(args):
+    """
+    Read the plotGEO input arguments in a more useful format
+    
+    Parameters
+    ----------
+    args: argparse object
+        Arguments returned by argparse user interaction
+    
+    Returns
+    -------
+    start_utc : datetime object
+        Start time [utc] in datetime format
+    """
+    try: 
+        start_utc = datetime.strptime(args.start, '%Y-%m-%dT%H:%M:%S')
+        start_utc = start_utc.replace(tzinfo=utc)
+    except:
+        print('Incorrect format! Please supply start epoch as '
+              '"YYYY-mm-ddTHH:MM:SS"...')
+        quit()
 
 def checkRunLength(start, end, cat_type):
     """
