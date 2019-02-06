@@ -4,10 +4,12 @@ Testing platform for GEOPlot software
 
 from tle import (
     parsePlotGEOInput,
+    requestFOV,
     TLE,
     Instrument,
     )
 import json
+import argparse as ap
 from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import (
@@ -17,6 +19,7 @@ from astropy.coordinates import (
     )
 from datetime import timedelta
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 try:
     FileNotFoundError
@@ -91,17 +94,14 @@ if __name__ == "__main__":
 	
 	start_utc = parsePlotGEOInput(args)
 	
-	"""
 	if args.fov:
+		ra_fov, dec_fov = requestFOV()
 		instrument = Instrument(args.fov)
-	"""
 	
 	for i in range(args.n_steps):
 		
-		print('Processing {}/{}'.format(str(i),
-                                        str(args.n_steps)), end="\r")
-		
 		time = start_utc + i*timedelta(minutes=args.timestep)
+		print(str(time))
 		lst = Time(time, scale='utc', 
 		           location=SITE_LOCATION).sidereal_time('apparent')
 		
@@ -109,8 +109,9 @@ if __name__ == "__main__":
 		dec_list = []
 		for n, norad_id in enumerate(cat):
 			
-			print('TLE {}/{}'.format(str(n),
-                                     str(len(cat))), end="\r")
+			print('Processing {} {}/{}'.format(str(i+1),
+			                                   str(n+1),
+                                               str(len(cat))), end="\r")
 			
 			tle = TLE(cat[norad_id][0], cat[norad_id][1])
 			ra, dec = tle.radec(time)
@@ -118,18 +119,39 @@ if __name__ == "__main__":
 			ha_list.append((lst - ra).wrap_at(12*u.hourangle).hourangle)
 			dec_list.append(dec)
 		
-		plt.figure(figsize=(10, 4))
-		plt.style.use('dark_background')
+		#plt.style.use('dark_background')
+		fig = plt.figure(figsize=(10, 6))
+		ax = fig.add_subplot(111)
 		
-		plt.plot(ha_list, dec_list, color=plt.cm.cool(0.28), s=2)
+		plt.plot(ha_list, dec_list, 'c.', ms=3)
+		
+		# Add FOV if requested
+		if args.fov:
+			ha_fov = Longitude((lst - ra).wrap_at(12*u.hourangle),
+			                   u.hourangle)
+			
+			x = ha_fov - instrument.fov_ra / 2
+			y = dec_fov - instrument.fov_dec / 2
+			
+			fov = Rectangle(xy=(x.hourangle, y.deg),
+						    width=instrument.fov_ra.hourangle,
+						    height=instrument.fov_dec.deg)
+			
+			fov.set_facecolor('red')
+			fov.set_edgecolor('red')
+			print('got here')
+			ax.add_artist(fov)
 		
 		plt.title(str(time))
 		
 		plt.xlabel('Hour angle / hr')
 		plt.ylabel('Declination / $^\circ$')
 		
+		plt.xlim(-12, 12)
+		plt.ylim(-33, 33)
+		
 		plt.show()
 		
 		input('enter')
 		
-		plt.savefig(args.out_dir + )
+		plt.savefig(args.out_dir + 'blah')

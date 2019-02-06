@@ -226,7 +226,7 @@ class TLE:
         """
         ra, dec, _ = (self.obj-self.obs).at(self.ts.utc(epoch)).radec()
         
-        return ra.degrees * u.deg, dec.degrees * u.deg
+        return Longitude(ra.hours, u.hourangle), dec.degrees
 
 class Instrument:
     """
@@ -234,8 +234,8 @@ class Instrument:
     """
     def __init__(self, instrument):
         if instrument.lower() == 'int':
-            self.fov_ra = 0.5
-            self.fov_dec = 0.5
+            self.fov_ra = Longitude(0.5, u.deg)
+            self.fov_dec = Latitude(0.5, u.deg)
 
 def parseRunInput(args):
     """
@@ -280,6 +280,8 @@ def parseEpochInput(args):
         print('Incorrect format! Please supply epoch as '
               '"YYYY-mm-ddTHH:MM:SS"...')
         quit()
+    
+    return epoch
 
 def parsePlotGEOInput(args):
     """
@@ -302,6 +304,32 @@ def parsePlotGEOInput(args):
         print('Incorrect format! Please supply start epoch as '
               '"YYYY-mm-ddTHH:MM:SS"...')
         quit()
+    
+    return start_utc
+
+def requestFOV():
+    """
+    Request necessary information to plot FOV for a given night
+    """
+    print('You have opted to plot a FOV. Please provide:')
+    while True:
+        try:
+            ra = input('Right ascension [HH:MM:SS]: ')
+            ra = Longitude(ra, u.hourangle)
+        except:
+            print('Incorrect format! Try again...')
+        else:
+            break
+    while True:
+        try:
+            dec = input('Declination [DD:MM:SS]: ')
+            dec = Latitude(dec, u.deg)
+        except:
+            print('Incorrect format! Try again...')
+        else:
+            break
+    
+    return ra, dec
 
 def checkRunLength(start, end, cat_type):
     """
